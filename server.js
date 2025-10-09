@@ -40,4 +40,40 @@ if (process.env.NODE_ENV === 'production') {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  // Seed default manager user if not exists
+  const User = require('./models/User');
+  (async () => {
+    try {
+      const existing = await User.findOne({ username: 'neal' });
+      if (!existing) {
+        const user = new User({
+          username: 'neal',
+          email: 'neal@example.com',
+          password: '24552455',
+          role: 'manager'
+        });
+        await user.save();
+        console.log('Seeded default manager user: neal / 24552455');
+      } else {
+        let changed = false;
+        if (existing.role !== 'manager') {
+          existing.role = 'manager';
+          changed = true;
+        }
+        if (existing.email !== 'neal@example.com') {
+          existing.email = 'neal@example.com';
+          changed = true;
+        }
+        // Always ensure known password for debug/login convenience
+        existing.password = '24552455';
+        changed = true;
+        if (changed) {
+          await existing.save();
+          console.log('Updated existing user neal (role/email/password)');
+        }
+      }
+    } catch (e) {
+      console.error('Error seeding default manager user:', e.message);
+    }
+  })();
 });

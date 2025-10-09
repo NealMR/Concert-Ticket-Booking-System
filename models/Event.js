@@ -25,7 +25,13 @@ const sectionSchema = new mongoose.Schema({
     type: String,
     required: false,
     default: '#3B82F6' // Default blue color for section highlighting
-  }
+  },
+  // Optional rectangular coordinates for interactive layout overlays
+  // Values are percentages (0-100) relative to the venueLayout image width/height
+  x: { type: Number, required: false, min: 0, max: 100 },
+  y: { type: Number, required: false, min: 0, max: 100 },
+  width: { type: Number, required: false, min: 0, max: 100 },
+  height: { type: Number, required: false, min: 0, max: 100 }
 });
 
 const eventSchema = new mongoose.Schema({

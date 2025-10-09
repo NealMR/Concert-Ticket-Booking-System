@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Event = require('../models/Event');
 const Booking = require('../models/Booking');
+const User = require('../models/User');
 const { managerAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -34,7 +35,11 @@ router.post('/events', managerAuth, [
   body('sections.*.name').notEmpty().withMessage('Section name is required'),
   body('sections.*.price').isNumeric().withMessage('Section price must be a number'),
   body('sections.*.totalCapacity').isInt({ min: 1 }).withMessage('Section capacity must be at least 1'),
-  body('venueLayout').optional().isURL().withMessage('Venue layout must be a valid URL'),
+  // Allow empty string and accept relative upload paths (e.g., /uploads/filename)
+  body('venueLayout')
+    .optional({ checkFalsy: true })
+    .isString()
+    .withMessage('Venue layout must be a string path or URL'),
   body('venueLayoutDescription').optional().isLength({ max: 200 }).withMessage('Venue layout description must be less than 200 characters')
 ], async (req, res) => {
   try {
@@ -240,3 +245,98 @@ router.get('/dashboard', managerAuth, async (req, res) => {
 });
 
 module.exports = router;
+ 
+// ========== USER MANAGEMENT (MANAGER ONLY) ==========
+
+// @route   PUT /api/manager/users/:id/promote
+// @desc    Promote a customer to manager
+// @access  Private (Manager only)
+router.put('/users/:id/promote', managerAuth, async (req, res) => {
+  try {
+    if (!req.user || req.user.username !== 'neal') {
+      return res.status(403).json({ message: 'Only the primary manager can promote users' });
+    }
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.role === 'manager') {
+      return res.status(400).json({ message: 'User is already a manager' });
+    }
+
+    user.role = 'manager';
+    await user.save();
+
+    res.json({
+      message: 'User promoted to manager successfully',
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Promote user error:', error);
+    res.status(500).json({ message: 'Server error promoting user' });
+  }
+});
+
+// @route   GET /api/manager/users
+// @desc    List users (basic info)
+// @access  Private (Manager only)
+router.get('/users', managerAuth, async (req, res) => {
+  try {
+    const { q } = req.query;
+    const filter = q
+      ? { $or: [
+          { username: { $regex: q, $options: 'i' } },
+          { email: { $regex: q, $options: 'i' } }
+        ] }
+      : {};
+    const users = await User.find(filter)
+      .select('username email role createdAt')
+      .sort({ createdAt: -1 })
+      .limit(200);
+    res.json(users);
+  } catch (error) {
+    console.error('List users error:', error);
+    res.status(500).json({ message: 'Server error fetching users' });
+  }
+});
+
+// @route   PUT /api/manager/users/:id/demote
+// @desc    Demote a manager to customer (only by primary manager 'neal')
+// @access  Private (Manager only)
+router.put('/users/:id/demote', managerAuth, async (req, res) => {
+  try {
+    if (!req.user || req.user.username !== 'neal') {
+      return res.status(403).json({ message: 'Only the primary manager can demote users' });
+    }
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (user.username === 'neal') {
+      return res.status(400).json({ message: 'Primary manager cannot be demoted' });
+    }
+    if (user.role === 'customer') {
+      return res.status(400).json({ message: 'User is already a customer' });
+    }
+    user.role = 'customer';
+    await user.save();
+    res.json({
+      message: 'User demoted to customer successfully',
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Demote user error:', error);
+    res.status(500).json({ message: 'Server error demoting user' });
+  }
+});
