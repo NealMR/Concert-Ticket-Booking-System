@@ -1,5 +1,5 @@
 {
-  "name": "eventpass-offline-booking",
+  "name": "gettix-offline-booking",
   "version": "1.0.0",
   "description": "Offline Event Ticket Booking System",
   "main": "server.js",
@@ -33,6 +33,6 @@
     "tickets",
     "mern"
   ],
-  "author": "EventPass Team",
+  "author": "Gettix Team",
   "license": "MIT"
 }

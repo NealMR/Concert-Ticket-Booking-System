@@ -2,7 +2,7 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🚀 Setting up EventPass Offline Booking System...\n');
+console.log('🚀 Setting up Gettix Offline Booking System...\n');
 
 // Check if Node.js is installed
 try {
@@ -39,7 +39,7 @@ if (!fs.existsSync(envPath)) {
   console.log('\n🔧 Creating .env file...');
   const envContent = `NODE_ENV=development
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/eventpass
+MONGODB_URI=mongodb://localhost:27017/gettix
 JWT_SECRET=your_jwt_secret_key_here_change_in_production
 REACT_APP_API_URL=http://localhost:5000`;
   
